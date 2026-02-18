@@ -1,0 +1,4 @@
+cryptography
+psycopg2-binary
+python-dotenv
+pyinstaller

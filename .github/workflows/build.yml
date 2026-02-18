@@ -1,0 +1,47 @@
+name: Build MyCryptor for All OS
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install Dependencies
+      run: |
+        pip install pyinstaller
+        pip install -r requirements.txt
+
+    - name: Create .env file from Secrets
+      # We create the .env file on the fly during the build server's session
+      shell: bash
+      run: |
+        echo "DB_URL=${{ secrets.DB_URL }}" >> .env
+        echo "MY_SALT=${{ secrets.MY_SALT }}" >> .env
+
+    - name: Build with PyInstaller (Windows)
+      if: matrix.os == 'windows-latest'
+      run: pyinstaller --noconsole --onefile --name="MyCryptor_Win" --add-data ".env;." mycryptor_app.py
+
+    - name: Build with PyInstaller (Mac/Linux)
+      if: matrix.os != 'windows-latest'
+      run: pyinstaller --noconsole --onefile --name="MyCryptor_${{ matrix.os }}" --add-data ".env:." mycryptor_app.py
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: MyCryptor-${{ matrix.os }}
+        path: dist/
